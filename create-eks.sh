@@ -149,6 +149,7 @@ eksctl create nodegroup \
 --cluster $CLUSTER \
 --name system-ng \
 --node-type t3.medium \
+--node-volume-size 50 \
 --nodes-min 1 \
 --nodes 2 \
 --nodes-max 3 \
@@ -165,7 +166,7 @@ eksctl create nodegroup \
 # eksctl create nodegroup \
 # --cluster $CLUSTER \
 # --name jenkins-ng \
-# --node-type t3.large \
+# --node-type t3.medium \
 # --nodes-min 1 \
 # --nodes 1 \
 # --nodes-max 3 \
@@ -234,42 +235,42 @@ EOF
 ############################################
 # PHASE 4: AWS LOAD BALANCER CONTROLLER
 ############################################
-echo "🔧 AWS Load Balancer Controller"
+# echo "🔧 AWS Load Balancer Controller"
 
-if ! aws iam get-policy --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/$ALB_POLICY_NAME >/dev/null 2>&1; then
-  echo "➕ Creating ALB IAM policy"
-  curl -s https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json \
-    -o /tmp/alb-policy.json
-  aws iam create-policy \
-    --policy-name "$ALB_POLICY_NAME" \
-    --policy-document file:///tmp/alb-policy.json
-fi
+# if ! aws iam get-policy --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/$ALB_POLICY_NAME >/dev/null 2>&1; then
+#   echo "➕ Creating ALB IAM policy"
+#   curl -s https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json \
+#     -o /tmp/alb-policy.json
+#   aws iam create-policy \
+#     --policy-name "$ALB_POLICY_NAME" \
+#     --policy-document file:///tmp/alb-policy.json
+# fi
 
-POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/$ALB_POLICY_NAME"
+# POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/$ALB_POLICY_NAME"
 
-if ! kubectl get sa aws-load-balancer-controller -n kube-system >/dev/null 2>&1; then
-  eksctl create iamserviceaccount \
-    --cluster "$CLUSTER_NAME" \
-    --namespace kube-system \
-    --name aws-load-balancer-controller \
-    --attach-policy-arn "$POLICY_ARN" \
-    --approve
-else
-  echo "✅ ALB ServiceAccount exists"
-fi
+# if ! kubectl get sa aws-load-balancer-controller -n kube-system >/dev/null 2>&1; then
+#   eksctl create iamserviceaccount \
+#     --cluster "$CLUSTER_NAME" \
+#     --namespace kube-system \
+#     --name aws-load-balancer-controller \
+#     --attach-policy-arn "$POLICY_ARN" \
+#     --approve
+# else
+#   echo "✅ ALB ServiceAccount exists"
+# fi
 
-helm repo add eks https://aws.github.io/eks-charts >/dev/null 2>&1 || true
-helm repo update
+# helm repo add eks https://aws.github.io/eks-charts >/dev/null 2>&1 || true
+# helm repo update
 
-if ! helm status aws-load-balancer-controller -n kube-system >/dev/null 2>&1; then
-  helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-    -n kube-system \
-    --set clusterName="$CLUSTER_NAME" \
-    --set serviceAccount.create=false \
-    --set serviceAccount.name=aws-load-balancer-controller
-else
-  echo "✅ ALB Controller installed"
-fi
+# if ! helm status aws-load-balancer-controller -n kube-system >/dev/null 2>&1; then
+#   helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+#     -n kube-system \
+#     --set clusterName="$CLUSTER_NAME" \
+#     --set serviceAccount.create=false \
+#     --set serviceAccount.name=aws-load-balancer-controller
+# else
+#   echo "✅ ALB Controller installed"
+# fi
 
 
 ############################################
@@ -304,13 +305,29 @@ else
 fi
 
 
+############################################
+# PHASE 6: METRICS SERVER
+############################################
+
+echo "🔧 Metrics Server"
+
+# Check if metrics-server is already installed
+if kubectl get deployment metrics-server -n kube-system >/dev/null 2>&1; then
+  echo "✅ Metrics Server already installed"
+else
+  echo "➕ Installing Metrics Server"
+
+  kubectl apply -f \
+  https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+fi 
+
 
 ############################################
 # VERIFICATION
 ############################################
 echo "🔍 Verifying"
 kubectl get nodes
-kubectl get pods -n kube-system | greo -E 'ebs|load-balancer'
+kubectl get pods -n kube-system | grep -E 'ebs|load-balancer'
 
 ############################################
 # DONE

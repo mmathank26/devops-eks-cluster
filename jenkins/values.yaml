@@ -1,0 +1,33 @@
+controller:
+  image: "jenkins/jenkins"
+  tag: "2.504.1-lts"
+
+  resources:
+    requests:
+      cpu: "300m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+  installPlugins:
+    - kubernetes:latest
+    - workflow-aggregator:latest
+    - git:latest
+    - configuration-as-code:latest
+    - job-dsl:latest
+
+  serviceType: ClusterIP
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostName: jenkins.meghalmathankar.com
+
+persistence:
+  enabled: true
+  storageClass: "gp3-retain"
+  size: 8Gi
+
+agent:
+  enabled: false
