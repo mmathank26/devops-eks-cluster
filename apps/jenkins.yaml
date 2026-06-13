@@ -14,7 +14,7 @@ spec:
       helm:
         valueFiles:
           - $values/jenkins/values.yaml
-    - repoURL: https://github.com/<your-username>/devops-eks-cluster.git
+    - repoURL: https://github.com/mmathank26/devops-eks-cluster.git
       targetRevision: main
       ref: values
   destination:
