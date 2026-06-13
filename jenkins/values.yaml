@@ -2,7 +2,7 @@ controller:
   image:
     registry: docker.io
     repository: jenkins/jenkins
-    tag: "2.504.1-lts"
+    tag: "2.504.2-lts"
     pullPolicy: Always
 
   resources:
