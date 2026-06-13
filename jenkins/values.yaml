@@ -3,7 +3,7 @@ controller:
     registry: docker.io
     repository: jenkins/jenkins
     tag: "2.504.1-lts"
-    pullPolicy: Never
+    pullPolicy: Always
 
   resources:
     requests:
